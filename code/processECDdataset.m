@@ -4,7 +4,7 @@ scenes = {'boxes_6dof', 'calibration', 'dynamic_6dof', 'office_zigzag', 'poster_
 
 dsetPath = '/media/wescomp/WesDataDrive3/ECD/';
 
-k = 8;
+k = 4;
 frameSize = [180 240];
 
 for sLoop = 1:numel(scenes)
@@ -36,17 +36,17 @@ for sLoop = 1:numel(scenes)
     
     Xtore = events2ToreFeature(aedat.data.polarity.x, aedat.data.polarity.y, aedat.data.polarity.timeStamp, aedat.data.polarity.polarity, sampleTimes, k, frameSize);
     
-    save(['/media/wescomp/WesDataDrive3/ECD/features/' num2str(sLoop) '_Xtore.mat'],'aedat','Xtore');
+    save(['/media/wescomp/WesDataDrive3/ECD/features2/' num2str(sLoop) '_Xtore.mat'],'aedat','Xtore');
     
 end
 
 
 %% write out as nifti for training/testing
 
-outDir = '/media/wescomp/WesDataDrive2/ECD/nifti/'
+outDir = '/media/wescomp/WesDataDrive3/ECD/nifti2/'
 for sLoop = 1:numel(scenes)
     
-    load(['/media/wescomp/WesDataDrive2/ECD/features/' num2str(sLoop) '_Xtore.mat'],'aedat','Xtore');
+    load(['/media/wescomp/WesDataDrive3/ECD/features2/' num2str(sLoop) '_Xtore.mat'],'aedat','Xtore');
     
     for imSample = 1:size(Xtore,4)
         

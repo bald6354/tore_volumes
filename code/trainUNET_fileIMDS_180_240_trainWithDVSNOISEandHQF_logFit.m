@@ -1,7 +1,7 @@
 clear, clc, close all
 
-imdsTestFeature = imageDatastore('/home/wescomp/data/ecd/features/','FileExtensions',{'.nii'},'ReadFcn',@(x) readNiftiSubset(x,[1:4 9:12]));
-imdsTestLabel = imageDatastore('/home/wescomp/data/ecd/labels_logFit/','FileExtensions',{'.nii'},'ReadFcn',@niftiread);
+imdsTestFeature = imageDatastore('/home/wescomp/data/ecd/features/','FileExtensions',{'.nii'},'ReadFcn',@niftiread);
+imdsTestLabel = imageDatastore('/home/wescomp/data/ecd/labels/','FileExtensions',{'.nii'},'ReadFcn',@niftiread);
 dsTest = combine(imdsTestFeature, imdsTestLabel);
 numTest = numel(imdsTestFeature.Files);
 
@@ -12,12 +12,12 @@ imdsTestLabel = subset(imdsTestLabel,randIdx);
 dsTestR = combine(imdsTestFeature, imdsTestLabel);
 
 imdsTrainFeature = imageDatastore({...
-    ['/home/wescomp/data/hist_exp_surf_data/features/tore/train/'], ...
+    ['/home/wescomp/data/dvsnoise20/features/tore/train/'], ...
     '/home/wescomp/data/hqf/features/'},'FileExtensions',{'.nii'},'ReadFcn',@(x) readNiftiSubset(x,[1:4 9:12]));
 
 imdsTrainLabel = imageDatastore({...
-    '/home/wescomp/data/hist_exp_surf_data/labels/train_logFit/', ...
-    '/home/wescomp/data/hqf/labels_logFit/'},'FileExtensions',{'.nii'},'ReadFcn',@niftiread);
+    '/home/wescomp/data/dvsnoise20/labels/train/', ...
+    '/home/wescomp/data/hqf/labels/'},'FileExtensions',{'.nii'},'ReadFcn',@niftiread);
 numTrain = numel(imdsTrainFeature.Files);
 
 %mix up training images (per group only)
