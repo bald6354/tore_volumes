@@ -9,7 +9,7 @@ if ~exist(checkpointPath, 'dir')
 end
 
 imageStore = imageDatastore([mainPath 'features' filesep],...
-    'IncludeSubfolders',true,'FileExtensions','.nii','LabelSource','foldernames','ReadFcn',@(x) readNifti_ncars(x,1:6,false));
+    'IncludeSubfolders',true,'FileExtensions','.nii','LabelSource','foldernames','ReadFcn',@niftiread);
 
 [testImageStore,trainImageStore] = splitEachLabel(imageStore,0.2,'randomized'); %orig paper used 80/20 split
 

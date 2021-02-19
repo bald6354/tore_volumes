@@ -8,7 +8,7 @@ outPath = '/home/wescomp/data/MNIST/features/test/';
 
 % Process Test Data
 
-%Find all the NCARS .dat files
+%Find all the files
 [~, files] = unix(['find ' mainPath ' -name ''*.bin''']);
 files = strsplit(files, newline);
 files(end) = [];
