@@ -43,7 +43,7 @@ for loop = 1:numel(files)
     end
     
     %Write out image
-    niftiwrite(Xhist,[outDir fn])
+    niftiwrite(Xtore, [outDir fn])
 
 end
 
