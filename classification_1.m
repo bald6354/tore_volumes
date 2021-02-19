@@ -1,6 +1,8 @@
 %Notes for processing each dataset. For info on each dataset see the github
 %page @ https://github.com/uzh-rpg/event-based_vision_resources
 
+clear, clc
+addpath('code')
 
 %% NCARS
 % 1. Run makeImages_NCARS.m to generate TORE volumes as nifti images
@@ -12,9 +14,10 @@
 % 2. Run nmnist_trainNetwork.m to train network
 
 
-%% N-Caltech
-% 1. Run makeImages_Ncaltech101_v2.m to generate TORE volumes as nifti images
-% 2. Run ncaltech101_trainNetwork_v2.m to train network
+%% N-Caltech (2 options - see paper)
+% 1. Run makeImages_Ncaltech101.m to generate TORE volumes as nifti images
+% 2a. Run ncaltech101_trainNetwork.m to train network (79.8)
+% 2b. Run ncaltech101_trainNetwork_v2.m to train network (83.4)
 
 
 %% Gesture

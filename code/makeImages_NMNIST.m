@@ -6,7 +6,7 @@ k = 3;
 mainPath = '/media/wescomp/WesDataDrive2/N-MNIST/Test/';
 outPath = '/home/wescomp/data/MNIST/features/test/';
 
-%% Process Train Data
+% Process Test Data
 
 %Find all the NCARS .dat files
 [~, files] = unix(['find ' mainPath ' -name ''*.bin''']);
@@ -17,15 +17,22 @@ files(end) = [];
 for loop = 1:numel(files)
     
     %Load file
-%     pts = load_atis_data([files(loop).folder filesep files(loop).name]);
     TD = Read_Ndataset(files{loop});
     pts.x = TD.x;
     pts.y = TD.y;
     pts.ts = TD.ts;
     pts.p = TD.p - 1;
     
+    %Normalize the data
+    pts.x = pts.x - min(pts.x) + 1;
+    pts.y = pts.y - min(pts.y) + 1;
+    pts.ts = pts.ts - min(pts.ts);
+    maxVal = max([max(pts.x(:)) max(pts.y(:))]);
+    maxTime = max(pts.ts);
+    frameSize = [maxVal maxVal];
+
     %Generate 6 color image
-    Xhist = events2ToreFeature(pts.x, pts.y, pts.ts, pts.p);
+    Xtore = events2ToreFeature(pts.x, pts.y, pts.ts, pts.p, maxTime, k, frameSize);
 
     [fp,fn,fe] = fileparts(files{loop});
     
@@ -35,10 +42,8 @@ for loop = 1:numel(files)
         mkdir(outDir)
     end
     
-    %Write out time-surface image
-    %     imwrite(I,[outDir fn '.png'])
-    %Write out time-surface image
-    niftiwrite(Xhist,[outDir fn])
+    %Write out tore
+    niftiwrite(Xtore,[outDir fn])
 
 end
 
@@ -47,7 +52,7 @@ end
 mainPath = '/media/wescomp/WesDataDrive2/N-MNIST/Train/';
 outPath = '/home/wescomp/data/MNIST/features/train/';
 
-%% Process Train Data
+% Process Train Data
 
 %Find all the NCARS .dat files
 [~, files] = unix(['find ' mainPath ' -name ''*.bin''']);
@@ -58,15 +63,22 @@ files(end) = [];
 for loop = 1:numel(files)
     
     %Load file
-%     pts = load_atis_data([files(loop).folder filesep files(loop).name]);
     TD = Read_Ndataset(files{loop});
     pts.x = TD.x;
     pts.y = TD.y;
     pts.ts = TD.ts;
     pts.p = TD.p - 1;
     
+    %Normalize the data
+    pts.x = pts.x - min(pts.x) + 1;
+    pts.y = pts.y - min(pts.y) + 1;
+    pts.ts = pts.ts - min(pts.ts);
+    maxVal = max([max(pts.x(:)) max(pts.y(:))]);
+    maxTime = max(pts.ts);
+    frameSize = [maxVal maxVal];
+
     %Generate 6 color image
-    Xhist = events2ToreFeature(pts.x, pts.y, pts.ts, pts.p);
+    Xtore = events2ToreFeature(pts.x, pts.y, pts.ts, pts.p, maxTime, k, frameSize);
 
     [fp,fn,fe] = fileparts(files{loop});
     
@@ -76,31 +88,8 @@ for loop = 1:numel(files)
         mkdir(outDir)
     end
     
-    %Write out time-surface image
-    %     imwrite(I,[outDir fn '.png'])
-    %Write out time-surface image
-    niftiwrite(Xhist,[outDir fn])
+    %Write out tore
+    niftiwrite(Xtore,[outDir fn])
 
 end
 
-
-%% Create validation dataset (random subset of test to increase speed during training)
-subsetSize = 120;
-
-%Cars
-mkdir(['..' filesep 'time_surfaces' filesep specDir filesep 'val' filesep 'cars'])
-files = dir(['..' filesep 'time_surfaces' filesep specDir filesep 'test' filesep 'cars' filesep '*.png']);
-subset = randperm(numel(files),subsetSize);
-for loop = 1:numel(subset)
-    copyfile([files(subset(loop)).folder filesep files(subset(loop)).name], ...
-        [strrep(files(subset(loop)).folder,'test','val') filesep files(subset(loop)).name])
-end
-
-%not cars
-mkdir(['..' filesep 'time_surfaces' filesep specDir filesep 'val' filesep 'background'])
-files = dir(['..' filesep 'time_surfaces' filesep specDir filesep 'test' filesep 'background' filesep '*.png']);
-subset = randperm(numel(files),subsetSize);
-for loop = 1:numel(subset)
-    copyfile([files(subset(loop)).folder filesep files(subset(loop)).name], ...
-        [strrep(files(subset(loop)).folder,'test','val') filesep files(subset(loop)).name])
-end

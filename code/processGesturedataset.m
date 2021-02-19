@@ -1,8 +1,10 @@
 clear, clc
 
+k = 3;
+frameSize = [128 128];
+
+%Need AedatTools: https://github.com/simbamford/AedatTools/
 addpath('/home/wescomp/Dropbox/WesDocs/UD/Research/AedatTools-master/Matlab/')
-addpath('/home/wescomp/Dropbox/WesDocs/UD/Research/eventCameraFeatures/iets/iets/code')
-% load('YPred_Ionly_allTestFrames_histsurf_unet256_v2.mat')
 
 dsetPath = '/media/wescomp/WesDataDrive3/DVS  Gesture dataset/DvsGesture/';
 featurePath = '/media/wescomp/WesDataDrive3/DVS  Gesture dataset/features_v2/';
@@ -17,6 +19,7 @@ for sLoop = 1:numel(aedatFiles)
     [fp, fn, fe] = fileparts(filePath)
     labels = importgesturelabels([fp filesep fn '_labels.csv'])
     
+    %first 24 are train/remainder are test
     if str2num(fn(5:6)) < 24
         trainOrTest = 'train';
         continue
@@ -62,11 +65,11 @@ for sLoop = 1:numel(aedatFiles)
         pNum = cat(1,pNum,[1:numel(tmpTimes)]');
     end
         
-    Xhist = events2ToreFeatureMulti(aedat.data.polarity.x, aedat.data.polarity.y, aedat.data.polarity.timeStamp, aedat.data.polarity.polarity, sampleTimes(:));
+    Xtore = events2ToreFeature(aedat.data.polarity.x, aedat.data.polarity.y, aedat.data.polarity.timeStamp, aedat.data.polarity.polarity, sampleTimes(:), k , frameSize);
 
     %for each movement write out data
-    for imLoop = 1:size(Xhist,4)
-        %Calculate output time-surface directory
+    for imLoop = 1:size(Xtore,4)
+        %Calculate output directory
         outDir = [featurePath trainOrTest filesep sprintf('%02d', class(imLoop)) filesep];
         if ~exist(outDir,'dir')
             mkdir(outDir)
@@ -74,8 +77,8 @@ for sLoop = 1:numel(aedatFiles)
         
         outFile = [fn '_c' sprintf('%02d', class(imLoop)) '_o' sprintf('%02d', movementOrder(imLoop)) '_p' sprintf('%03d', pNum(imLoop)) '.nii'];
         
-        %Write out time-surface image
-        niftiwrite(Xhist(:,:,:,imLoop),[outDir outFile])
+        %Write out image
+        niftiwrite(Xtore(:,:,:,imLoop),[outDir outFile])
     end
 end
 

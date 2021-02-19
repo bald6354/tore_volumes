@@ -8,18 +8,17 @@ if ~exist(checkpointPath, 'dir')
     mkdir(checkpointPath)
 end
 
-imageStore = imageDatastore([mainPath 'features_v2' filesep],...
-    'IncludeSubfolders',true,'FileExtensions','.nii','LabelSource','foldernames','ReadFcn',@(x) readNifti_ncaltech101(x,1:12,false,0));
+imageStore = imageDatastore([mainPath 'features' filesep],...
+    'IncludeSubfolders',true,'FileExtensions','.nii','LabelSource','foldernames','ReadFcn',@(x) readNifti_ncars(x,1:6,false));
 
-[testImageStore,trainImageStore] = splitEachLabel(imageStore,0.33,'randomized'); %e2vid paper used 66/33 split
+[testImageStore,trainImageStore] = splitEachLabel(imageStore,15); %orig paper used 15 test samples per class
 
 numTest = numel(testImageStore.Files)
 numTrain = numel(trainImageStore.Files)
 
-trainImageStore.ReadFcn = @(x) readNifti_ncaltech101(x,1:12,true,15); %flip l/r and up to 15 pixel random shifts
+trainImageStore.ReadFcn = @(x) readNifti_ncaltech101(x,1:6,true,15);
 
-% makePretrainedNetworkGoogleNet_3d_ncaltech101_v2 %~83.37 (6-layer version)
-makePretrainedNetworkGoogleNet_3d_ncaltech101_v3 %~83.40 (12-layer version, best for tore)
+makePretrainedNetworkGoogleNet_3d_ncaltech101 %~79.87 orig paper method (82.78 e2vid split)
 
 %CNN
 miniBatchSize  = 2^6;
@@ -45,5 +44,5 @@ options = trainingOptions('adam', ...
 [YPred,probs] = classify(net,testImageStore);
 accuracy = mean(YPred == testImageStore.Labels)
 
-save('trainedNetworks/googlenet_3d_ncaltech101_lraugmentation_8340acc_e2vidsplit_v3.mat','net')
+save('trainedNetworks/googlenet_3d_ncaltech101_augmentation_7987acc_v1.mat','net')
 

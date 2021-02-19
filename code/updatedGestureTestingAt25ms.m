@@ -9,7 +9,7 @@ load('/home/wescomp/Dropbox/WesDocs/UD/Research/eventCameraFeatures/iets/iets/co
 mainPath = '/media/wescomp/WesDataDrive3/DVS  Gesture dataset/features_v2/test/'
 
 testImageStore = imageDatastore(mainPath ,...
-    'IncludeSubfolders',true,'FileExtensions','.nii','LabelSource','foldernames','ReadFcn',@(x) readNifti_ncars(x,1:6,false));
+    'IncludeSubfolders',true,'FileExtensions','.nii','LabelSource','foldernames','ReadFcn',@niftiread);
 
 [YPred,probs] = classify(net,testImageStore);
 accuracy = mean(YPred == testImageStore.Labels)

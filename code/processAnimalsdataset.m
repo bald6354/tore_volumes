@@ -1,8 +1,10 @@
 clear, clc
 
-addpath(genpath('/home/wescomp/Dropbox/WesDocs/UD/Research/AedatTools-master/'))
-addpath('/home/wescomp/Dropbox/WesDocs/UD/Research/eventCameraFeatures/code')
-% load('YPred_Ionly_allTestFrames_histsurf_unet256_v2.mat')
+k = 3;
+frameSize = [128 128];
+
+%Need AedatTools: https://github.com/simbamford/AedatTools/
+addpath('/home/wescomp/Dropbox/WesDocs/UD/Research/AedatTools-master/Matlab/')
 
 dsetPath = '/media/wescomp/WesDataDrive3/dvs_animals/';
 featurePath = '/media/wescomp/WesDataDrive3/dvs_animals/features_v2/';
@@ -42,19 +44,6 @@ for sLoop = 1:numel(aedatFiles)
     aedat.data.polarity.timeStamp = double(aedat.data.polarity.timeStamp - min(aedat.data.polarity.timeStamp));
     aedat.data.polarity.polarity = double(aedat.data.polarity.polarity);
     
-  
-%    
-%     issues.filename{sLoop} = fn;
-%     issues.numEvents(sLoop) = double(aedat.info.numEventsInFile);
-%     issues.firstTimeStamp(sLoop) = double(aedat.info.firstTimeStamp);
-%     issues.lastTimeStamp(sLoop) = double(aedat.info.lastTimeStamp);
-%     issues.firstLabelTime(sLoop) = double(min(labels.startTime_usec));
-%     issues.lastLabelTime(sLoop) = double(max(labels.endTime_usec));
-%     issues.sumLabels(sLoop) = double(sum(labels.endTime_usec - labels.startTime_usec));
-%     issues.labelCoverage(sLoop) = issues.sumLabels(sLoop)/(double(aedat.info.lastTimeStamp - aedat.info.firstTimeStamp));
-
-% end
-
     %old method
 %     %create sample times for each class/movement
 %     samplePercents = 0:2:100
@@ -81,13 +70,12 @@ for sLoop = 1:numel(aedatFiles)
         pNum = cat(1,pNum,[1:numel(tmpTimes)]');
     end
     
-%     sampleTimes = labels.endTime_usec;
-        
-    Xhist = events2ToreFeatureMulti(aedat.data.polarity.x, aedat.data.polarity.y, aedat.data.polarity.timeStamp, aedat.data.polarity.polarity, sampleTimes(:));
+    Xtore = events2ToreFeature(aedat.data.polarity.x, aedat.data.polarity.y, aedat.data.polarity.timeStamp, aedat.data.polarity.polarity, sampleTimes(:), k , frameSize);
 
     %for each movement write out data
-    for imLoop = 1:size(Xhist,4)
-        %Calculate output time-surface directory
+    for imLoop = 1:size(Xtore,4)
+        
+        %Calculate output directory
         outDir = [featurePath trainOrTest filesep sprintf('%02d', class(imLoop)) filesep];
         if ~exist(outDir,'dir')
             mkdir(outDir)
@@ -96,7 +84,7 @@ for sLoop = 1:numel(aedatFiles)
         outFile = [fn '_c' sprintf('%02d', class(imLoop)) '_o' sprintf('%02d', movementOrder(imLoop)) '_p' sprintf('%03d', pNum(imLoop)) '.nii'];
         
         %Write out time-surface image
-        niftiwrite(Xhist(:,:,:,imLoop),[outDir outFile])
+        niftiwrite(Xtore(:,:,:,imLoop),[outDir outFile])
     end
 end
 

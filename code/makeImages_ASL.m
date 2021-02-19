@@ -1,9 +1,3 @@
-%University of Dayton
-%Inceptive Event Time Surfaces - ICIAR 2019
-%29AUG2019
-
-%Run from 'code' directory
-
 clear, clc
 
 
@@ -13,7 +7,7 @@ outPath = '/home/wescomp/data/ALS_DVS_Dataset/features/';
 
 %% Process Train Data
 
-%Find all the NCARS .dat files
+%Find all the ALS .dat files
 [~, files] = unix(['find ' mainPath ' -name ''*.mat''']);
 files = strsplit(files, newline);
 files(end) = [];
@@ -22,7 +16,6 @@ files(end) = [];
 for loop = 1:numel(files)
     
     %Load file
-%     pts = load_atis_data([files(loop).folder filesep files(loop).name]);
     load(files{loop})
     pts.x = x;
     pts.y = y;
