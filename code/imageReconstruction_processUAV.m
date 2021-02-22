@@ -1,12 +1,8 @@
 clear, clc
 
-% load('YPred_Ionly_allTestFrames_histsurf_unet256_v2.mat')
-
+% Update this to where the drone video is located
 basePath = '/media/wescomp/WesDataDrive3/dvs_drone/indoor_45_11_davis/';
-% fn = "/home/wescomp/Dropbox/WesDocs/UD/Research/eventCameraFeatures/uavData/scene1/events.txt"
-% fn = "/home/wescomp/Dropbox/WesDocs/UD/Research/eventCameraFeatures/uavData/indoor_45_2_davis_with_gt/events.txt"
 aedat = readUAVdata([basePath 'events.txt']);
-% fn = "/home/wescomp/Dropbox/WesDocs/UD/Research/eventCameraFeatures/uavData/indoor_45_2_davis_with_gt/images.txt"
 aedat.data.frames = readUAVimgTimes([basePath 'images.txt']);
 aedat.data.imu = readUAVimu([basePath 'imu.txt']);
 aedat.data.frames.imu = interpolateIMU(aedat.data.imu, aedat.data.frames.timeStamp, false, false);
@@ -15,7 +11,7 @@ if ~issorted(aedat.data.polarity.timeStamp)
     [aedat.data.polarity.timeStamp,idx] = sort(aedat.data.polarity.timeStamp);
     aedat.data.polarity.y = aedat.data.polarity.y(idx);
     aedat.data.polarity.x = aedat.data.polarity.x(idx);
-    aedat.data.polarity.polarity = aedat.data.polarity.polarity(idx);    
+    aedat.data.polarity.polarity = aedat.data.polarity.polarity(idx);
 end
 
 if ~issorted(aedat.data.frames.timeStamp)
@@ -34,103 +30,52 @@ end
 % sampleTimes = median(aedat.data.polarity.timeStamp)+1e6:1e6/1000:median(aedat.data.polarity.timeStamp)+2e6;
 sampleTimes = aedat.data.frames.timeStamp;
 
-Xhist = events2HistFeature(aedat.data.polarity.x, aedat.data.polarity.y, aedat.data.polarity.timeStamp, aedat.data.polarity.polarity, sampleTimes);
+k = 4;
+frameSize = [260 346];
+xTore = events2ToreFeature(aedat.data.polarity.x, aedat.data.polarity.y, aedat.data.polarity.timeStamp, aedat.data.polarity.polarity, sampleTimes, k, frameSize);
 
-
-YPredictedHist = predict(net,Xhist(3:end-2,46:end-45,:,:));
-YPredictedHist = squeeze(YPredictedHist);
-for loop = 1:size(YPredictedHist,3)
-    imagesc(YPredictedHist(:,:,loop))
-    title(num2str(loop))
-    pause(.05)
-end
-
-%log-based
-load('../pretrainedNetworks/imRecon/unet180240_tore_stretch0to1_trainedondvsnoiseandhqf_logaps12X_v2_smallerK.mat')
-win = centerCropWindow2d(size(Xhist,[1 2]),[180 240]);
+%make dvs-based video
+load('../pretrainedNetworks/imRecon/unet180240_tore_histeq_trainedondvsnoiseandhqf_k4_f64_best.mat')
+win = centerCropWindow2d(size(xTore,[1 2]),[180 240]);
 [r,c] = deal(win.YLimits(1):win.YLimits(2),win.XLimits(1):win.XLimits(2));
 aps = aedat.data.frames.samples(r,c,:);
-dvs = predict(net,Xhist(r,c,[1:2 9:10],:));
-montage(mat2gray(exp(dvs(:,:,1,756:764)./2)),"Size",[1 9])
+dvs = predict(net,xTore(r,c,:,:));
+dvs(dvs<0) = 0;
+dvs(dvs>1) = 1;
+figure
+montage(mat2gray(aps(:,:,756:764)),"Size",[1 9])
+im_aps=getframe;
+imtool(im_aps.cdata)
+figure
+montage(mat2gray(dvs(:,:,1,756:764)),"Size",[1 9])
+im_dvs=getframe;
+imtool(im_dvs.cdata)
+imtool(cat(1,im_aps.cdata,im_dvs.cdata))
 upTimes = linspace(sampleTimes(757),sampleTimes(758),9);
-XhistUpsampled = events2HistFeature(aedat.data.polarity.x, aedat.data.polarity.y, aedat.data.polarity.timeStamp, aedat.data.polarity.polarity, upTimes);
-dvsUp = predict(net,XhistUpsampled(r,c,[1:2 9:10],:));
+xToreUpsampled = events2ToreFeature(aedat.data.polarity.x, aedat.data.polarity.y, aedat.data.polarity.timeStamp, aedat.data.polarity.polarity, upTimes, k, frameSize);
+dvsUp = predict(net,xToreUpsampled(r,c,:,:));
 figure;
-montage(mat2gray(exp(dvsUp./2)),"Size",[1 9])
+montage(mat2gray(dvsUp),"Size",[1 9])
 im_dvsUp=getframe;
 imtool(im_dvsUp.cdata)
 
-v = VideoWriter('indoor_45_11_davis_apsFrames.avi');
-open(v);
 
+%% write out video
+v = VideoWriter(['vids' filesep 'imRecon' filesep 'indoor_45_11_davis_apsFrames.avi']);
+open(v);
 figure
 colormap gray
-for loop = 1:size(YPredictedHist,3)
-    imagesc(YPredictedHist(:,:,loop))
-    ca(mod(loop,(caHistSize-1))+1,:) = caxis;
-    caxis(mean(ca,1))
-%     title([num2str(loop) ' - ' num2str(mean(ca,1))])
+for loop = 1:size(dvs,4)
+    imagesc(cat(2,mat2gray(dvs(:,:,1,loop)),mat2gray(aps(:,:,loop))),[0 1])
     pause(.01)
-    set(gcf,'Position',[100 100 356 356],'Units','pixels')
+    set(gcf,"ToolBar","none")
+    set(gcf,"MenuBar","none")
+    set(gcf,'Position',[100 100 2*240 180],'Units','pixels')
     set(gca,'Position',[0 0 1 1],'Units','normalized')
+    set(gca,'TickLength',[0 0])
+    pause(.01)
     frame = getframe(gcf);
     writeVideo(v,frame);
     vid(:,:,:,loop) = frame.cdata;
 end
-
-close(v);
-
-
-%%
-
-aps = aedat.data.frames.samples(3:end-2,46:end-45,:);
-dvs = YPredictedHist;
-
-%scale both 0 to 1
-% dvs = dvs - repmat(min(dvs,[],[1 2]),256,256,1);
-% dvs = dvs ./ repmat(range(dvs,[1 2]),256,256,1);
-% aps = aps - repmat(min(aps,[],[1 2]),256,256,1);
-% aps = aps ./ repmat(range(aps,[1 2]),256,256,1);
-
-%min to zero only
-%45.1054 is norm from DVSNOISE20
-dvs = dvs .* 45.1054;
-dvs = dvs - repmat(min(dvs,[],[1 2]),256,256,1);
-dvs = dvs .* (mean(aps(:))/mean(dvs(:))); %scalar normalization
-dvs = dvs ./ 255;
-aps = aps ./ 255;
-
-%temporal smoothing
-sigma = 21;
-lp2d = imgaussfilt(dvs,sigma);
-lp3d = imgaussfilt3(dvs,sigma);
-bias = lp2d - lp3d;
-dvs = dvs - bias;
-
-wes = cat(2,aps,dvs);
-
-% %allow the colormap to showly change
-% caHistSize = 50;
-% ca(1:caHistSize,1) = -1;
-% ca(1:caHistSize,2) = 1.5;
-
-v = VideoWriter('indoor_45_11_davis_apsFrames_both_min2zeroAndScaledGlobalTempSmoothed21.avi');
-open(v);
-clear vid
-
-figure
-colormap gray
-for loop = 1:size(wes,3)
-    imagesc(wes(:,:,loop),[0 1])
-%     ca(mod(loop,(caHistSize-1))+1,:) = caxis;
-%     caxis(mean(ca,1))
-%     title([num2str(loop) ' - ' num2str(mean(ca,1))])
-    pause(.01)
-    set(gcf,'Position',[100 100 100+2*256 100+256],'Units','pixels')
-    set(gca,'Position',[0 0 1 1],'Units','normalized')
-    frame = getframe(gcf);
-    writeVideo(v,frame);
-    vid(:,:,:,loop) = frame.cdata;
-end
-
 close(v);
