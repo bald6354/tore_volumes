@@ -1,7 +1,7 @@
 clear, clc, close all
 
-imdsTestFeature = imageDatastore('/home/wescomp/data/ecd/features/','FileExtensions',{'.nii'},'ReadFcn',@(x) readNiftiSubset(x,[1:4 9:12]));
-imdsTestLabel = imageDatastore('/home/wescomp/data/ecd/labels/','FileExtensions',{'.nii'},'ReadFcn',@niftiread);
+imdsTestFeature = imageDatastore('/home/wescomp/data/imRecon/ecd/features/','FileExtensions',{'.nii'},'ReadFcn',@niftiread);
+imdsTestLabel = imageDatastore('/home/wescomp/data/imRecon/ecd/labels/','FileExtensions',{'.nii'},'ReadFcn',@niftiread);
 dsTest = combine(imdsTestFeature, imdsTestLabel);
 numTest = numel(imdsTestFeature.Files);
 
@@ -12,12 +12,11 @@ imdsTestLabel = subset(imdsTestLabel,randIdx);
 dsTestR = combine(imdsTestFeature, imdsTestLabel);
 
 imdsTrainFeature = imageDatastore({...
-    ['/home/wescomp/data/hist_exp_surf_data/features/hist/train/'], ...
-    '/home/wescomp/data/hqf/features/'},'FileExtensions',{'.nii'},'ReadFcn',@(x) readNiftiSubset(x,[1:4 9:12]));
-
+    ['/home/wescomp/data/imRecon/dvsnoise20/train/features/'], ...
+    '/home/wescomp/data/imRecon/hqf/features/'},'FileExtensions',{'.nii'},'ReadFcn',@niftiread);
 imdsTrainLabel = imageDatastore({...
-    '/home/wescomp/data/hist_exp_surf_data/labels/train/', ...
-    '/home/wescomp/data/hqf/labels/'},'FileExtensions',{'.nii'},'ReadFcn',@niftiread);
+    '/home/wescomp/data/imRecon/dvsnoise20/train/labels/', ...
+    '/home/wescomp/data/imRecon/hqf/labels/'},'FileExtensions',{'.nii'},'ReadFcn',@niftiread);
 numTrain = numel(imdsTrainFeature.Files);
 
 %mix up training images (per group only)
@@ -27,20 +26,19 @@ imdsTrainLabel = subset(imdsTrainLabel,randIdx);
 
 dsTrain = combine(imdsTrainFeature, imdsTrainLabel);
 
-dsTest = transform(dsTest,@(x) randChipImRecon(x,[180 240],false,true,true,[180 240])); %center chip testing (video and images)
-dsTestR = transform(dsTestR,@(x) randChipImRecon(x,[180 240],true,true,false,[180 240])); %randomized chip testing for validation
-dsTrain = transform(dsTrain,@(x) randChipImRecon(x,[180 240],true,true,false,[180 240]));
+%randChipImRecon(data, chipSize, randomizeData, centerChip, chipSizeY,histeqY)
+dsTest = transform(dsTest,@(x) randChipImRecon(x,[180 240],false,true,[180 240],false)); %center chip testing (video and images)
+dsTestR = transform(dsTestR,@(x) randChipImRecon(x,[180 240],false,false,[180 240],false)); %randomized chip testing for validation
+dsTrain = transform(dsTrain,@(x) randChipImRecon(x,[180 240],true,false,[180 240],true)); %train with histeq data
 
-% dsTest = transform(dsTest,@(x) randChipImages2(x,[180 240],false,false,true,true,false,1,[180 240],false,false,false,false)); %center chip testing (video and images)
-% dsTestR = transform(dsTestR,@(x) randChipImages2(x,[180 240],true,false,true,false,false,1,[180 240],false,false,false,false)); %randomized chip testing for validation
-% dsTrain = transform(dsTrain,@(x) randChipImages2(x,[180 240],true,false,true,false,false,1,[180 240],false,false,false,false));
 
-%%
-build_240c_network_smallerK()
+%% Train
 
-layers = lgraph;
+k = 4
+numFilt = 64
+layers = build_180_240(k, numFilt);
 
-miniBatchSize  = 2^5; %2^4;
+miniBatchSize  = 2^4; %2^5;
 validationFrequency = floor(numTrain/miniBatchSize);
 options = trainingOptions('adam', ...
     'MiniBatchSize',miniBatchSize, ...
@@ -59,39 +57,72 @@ options = trainingOptions('adam', ...
 
 [net,info] = trainNetwork(dsTrain, layers, options);
 
-save('../pretrainedNetworks/imRecon/unet180240_tore_stretch0to1_trainedondvsnoiseandhqf_logaps12X_v2_smallerK.mat','net')
+save('pretrainedNetworks/imRecon/unet180240_tore_histeq_trainedondvsnoiseandhqf_k4_f64_channel.mat','net')
 
-%%
+%% Look at some sample reconstructions
 
 dsTestR.reset();
 
 for imSample = 1:10
-    %Grab a random sample
     
+    %Grab a random sample
     data = dsTestR.read();
     YPredicted = predict(net,data{1});
     
     figure
     tlo = tiledlayout(1,2,'TileSpacing','none','Padding','none');
-    im = flipud(data{2}(:,:,1));
-    imNorm = im - repmat(mean(im,[1 2]),size(im,1),size(im,2));
-    for loop = 1
-        nexttile
-        if loop == 7 || loop == 8
-            imagesc(flipud(data{2}(:,:,loop)),[-3 3])
-        else
-            imagesc(imNorm)
-        end
-        ca(loop,:) = caxis;
-    end
-    for loop = 1
-        nexttile
-        imagesc(flipud(YPredicted(:,:,loop)))
-        title(labels{loop})
-    end
+    im = data{2}(:,:,1);
+    
+    nexttile
+    imagesc(YPredicted)
+
+    nexttile
+    imagesc(im)
+    
     colormap gray
     set(tlo.Children,'XTick',[], 'YTick', []); % all in one
-    set(gcf,'Position',[144 243 1617 683])
-    saveas(gcf,['images/histsurf_unet256_v2_' num2str(imSample) '_' datestr(now,'yyyymmdd_HHMMSS') '_Ionly_0to1_hist_65rmse.png'])
+    set(gcf,'Position',[225 646 480 180])
+    pause(.01)
+
 end
 
+
+%% Look at test data from DVSNOISE20
+
+imdsTestFeature = imageDatastore('/home/wescomp/data/imRecon/dvsnoise20/test/features/','FileExtensions',{'.nii'},'ReadFcn',@niftiread);
+imdsTestLabel = imageDatastore('/home/wescomp/data/imRecon/dvsnoise20/test/labels/','FileExtensions',{'.nii'},'ReadFcn',@niftiread);
+dsTest = combine(imdsTestFeature, imdsTestLabel);
+numTest = numel(imdsTestFeature.Files);
+%mix up test images (per group only)
+randIdx = randperm(numel(imdsTestFeature.Files));
+imdsTestFeature = subset(imdsTestFeature,randIdx);
+imdsTestLabel = subset(imdsTestLabel,randIdx);
+dsTestR = combine(imdsTestFeature, imdsTestLabel);
+
+dsTest = transform(dsTest,@(x) randChipImRecon(x,[180 240],false,true,[180 240],false)); %center chip testing (video and images)
+dsTestR = transform(dsTestR,@(x) randChipImRecon(x,[180 240],false,true,[180 240],false)); %center chip testing (video and images)
+
+dsTestR.reset();
+
+for imSample = 1:10
+    
+    %Grab a random sample
+    data = dsTestR.read();
+    YPredicted = predict(net,data{1});
+    
+    figure
+    tlo = tiledlayout(1,2,'TileSpacing','none','Padding','none');
+    im = data{2}(:,:,1);
+    
+    nexttile
+    imagesc(YPredicted)
+
+    nexttile
+    imagesc(im)
+    
+    colormap gray
+    set(tlo.Children,'XTick',[], 'YTick', []); % all in one
+    set(gcf,'Position',[225 646 480 180])
+    pause(.01)
+
+end

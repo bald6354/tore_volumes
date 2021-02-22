@@ -13,7 +13,7 @@
 
 %% ECD (test data) (Req. ECD dataset) (all testing)git status
 %1. Run processECDdataset.m to generate TORE volumes as nifti images
-%2. Run trainUNET_fileIMDS_180_240_trainWithDVSNOISEandHQF_logFit.m to train network for image reconstruction
+%2. Run trainUNET_fileIMDS_180_240_trainWithDVSNOISEandHQF.m to train network for image reconstruction
 %3. Run scoreECDdataset.m to generate MSE and SSIM numbers
 
 
