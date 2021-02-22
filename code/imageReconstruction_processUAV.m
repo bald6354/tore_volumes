@@ -66,7 +66,7 @@ open(v);
 figure
 colormap gray
 for loop = 1:size(dvs,4)
-    imagesc(cat(2,mat2gray(dvs(:,:,1,loop)),mat2gray(aps(:,:,loop))),[0 1])
+    imagesc(cat(2,,mat2gray(dvs(:,:,1,loop)),mat2gray(aps(:,:,loop))),[0 1])
     pause(.01)
     set(gcf,"ToolBar","none")
     set(gcf,"MenuBar","none")
@@ -77,5 +77,30 @@ for loop = 1:size(dvs,4)
     frame = getframe(gcf);
     writeVideo(v,frame);
     vid(:,:,:,loop) = frame.cdata;
+end
+close(v);
+
+
+%% write out side-by-side video
+v = VideoWriter(['vids' filesep 'imRecon' filesep 'indoor_45_11_davis_sidebyside.avi']);
+open(v);
+figure
+colormap gray
+delta = 100e3; %time in usec for pos/neg dvs threshold image
+for loop = 1:size(dvs,4)
+    posDvs = xTore(r,c,1,loop) <= log((delta+1)/151);
+    negDvs = xTore(r,c,5,loop) <= log((delta+1)/151);
+    pnDvs = (posDvs - negDvs + 1)./2;
+    pnTore = mat2gray(min(xTore(r,c,[1 5],loop),[],3));
+    imagesc(cat(2,pnDvs,pnTore,mat2gray(dvs(:,:,1,loop)),mat2gray(aps(:,:,loop))),[0 1])
+    pause(.01)
+    set(gcf,"ToolBar","none")
+    set(gcf,"MenuBar","none")
+    set(gcf,'Position',[100 100 4*240 180],'Units','pixels')
+    set(gca,'Position',[0 0 1 1],'Units','normalized')
+    set(gca,'TickLength',[0 0])
+    pause(.01)
+    frame = getframe(gcf);
+    writeVideo(v,frame);
 end
 close(v);

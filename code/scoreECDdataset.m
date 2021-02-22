@@ -86,7 +86,6 @@ for sLoop = 1:numel(scenes)
     
     v = VideoWriter(['vids' filesep 'imRecon' filesep scenes{sLoop} '_sampleVids.avi']);
     open(v);
-    clear vid
     
     figure
     colormap gray
@@ -107,7 +106,52 @@ for sLoop = 1:numel(scenes)
         pause(.01)
         frame = getframe(gcf);
         writeVideo(v,frame);
-        vid(:,:,:,loop) = frame.cdata;
+    end
+    
+    close(v);
+    
+end
+
+
+%% Write side-by-side videos
+
+delta = 100e3; %time in usec for pos/neg dvs threshold image
+
+for sLoop = 1:numel(scenes)
+    
+    truth = truthAll{sLoop};
+    Xtore = XtoreAll{sLoop};
+    numFrames = size(Xtore,4);
+    
+    v = VideoWriter(['vids' filesep 'imRecon' filesep scenes{sLoop} '_sidebyside.avi']);
+    open(v);
+    clear vid
+    
+    figure
+    colormap gray
+    for loop = 1:numFrames
+        YPred = double(predict(net1,Xtore(1:180,1:240,:,loop)));
+        thresh = YPred;
+        thresh(thresh<0) = 0;
+        thresh(thresh>1) = 1;
+        aps = mat2gray(truth(:,:,loop));
+        dvs = mat2gray(thresh);
+
+        posDvs = Xtore(1:180,1:240,1,loop) <= log((delta+1)/151);
+        negDvs = Xtore(1:180,1:240,5,loop) <= log((delta+1)/151);
+        pnDvs = (posDvs - negDvs + 1)./2;
+        pnTore = mat2gray(min(Xtore(1:180,1:240,[1 5],loop),[],3));
+        imagesc(cat(2,pnDvs,pnTore,dvs,aps),[0 1])
+        pause(.01)
+        
+        set(gcf,"ToolBar","none")
+        set(gcf,"MenuBar","none")
+        set(gcf,'Position',[100 100 4*240 180],'Units','pixels')
+        set(gca,'Position',[0 0 1 1],'Units','normalized')
+        set(gca,'TickLength',[0 0])
+        pause(.01)
+        frame = getframe(gcf);
+        writeVideo(v,frame);
     end
     
     close(v);
