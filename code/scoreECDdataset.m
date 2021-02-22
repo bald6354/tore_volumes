@@ -1,5 +1,7 @@
 %Script to score ECD data
 
+scenes = {'boxes_6dof', 'calibration', 'dynamic_6dof', 'office_zigzag', 'poster_6dof', 'shapes_6dof', 'slider_depth'}
+
 
 %% speedup loading
 
@@ -7,7 +9,7 @@
 cuts = [5 20;5 20;5 20;5 12;5 20;5 20;1 2.5];
 
 for sLoop = 1:numel(scenes)
-    load(['/media/wescomp/WesDataDrive3/ECD/features/' num2str(sLoop) '_Xtore.mat'],'aedat','Xtore');
+    load(['/media/wescomp/WesDataDrive3/ECD/features2/' num2str(sLoop) '_Xtore.mat'],'aedat','Xtore');
     
     %filter to seq cuts
     elapsedFrameTimeSec = (aedat.data.frames.timeStamp - min(aedat.data.frames.timeStamp))./1e6;
@@ -28,11 +30,11 @@ end
 scores.mse = zeros(numel(scenes),5);
 scores.ssim = zeros(numel(scenes),5);
 
-load('../pretrainedNetworks/unet180240_tore_stretch0to1_trainedondvsnoiseandhqf_logaps12X_v2_smallerK.mat')
+% load('pretrainedNetworks/imRecon/unet180240_tore_histeq_trainedondvsnoiseandhqf_k4_f32.mat')
 net1 = net;
 
-%for logFit
-load('/home/wescomp/data/ecd/norms_logFit.mat')
+% %for logFit
+% load('/home/wescomp/data/ecd/norms_logFit.mat')
 clear data
 
 for sLoop = 1:numel(scenes)
@@ -40,7 +42,7 @@ for sLoop = 1:numel(scenes)
     truth = truthAll{sLoop};
     Xtore = XtoreAll{sLoop};
     
-    Xtore = Xtore(:,:,[1:2 9:10],:);
+%     Xtore = Xtore(:,:,[1:2 9:10],:);
     numFrames = size(Xtore,4);
     clear aedat
     
@@ -58,14 +60,14 @@ for sLoop = 1:numel(scenes)
     
     thresh2_mse = zeros(numFrames,1);
     thresh2_ssim = zeros(numFrames,1);
-    
+
     dvsVid = []
     for imSample = 1:numFrames
         clc, imSample/numFrames
         
         YPred = double(predict(net1,Xtore(1:180,1:240,:,imSample)));
         
-        YPred = exp(YPred./2);
+%         YPred = exp(YPred./2);
         
         data{2} = mat2gray(truth(:,:,imSample));
         

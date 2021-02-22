@@ -22,7 +22,7 @@ lgraph = layerGraph();
 % array of layers.
 
 tempLayers = [
-    imageInputLayer([180 240 8],"Name","ImageInputLayer")
+    imageInputLayer([180 240 8],"Name","ImageInputLayer","Normalization",)
     convolution2dLayer([3 3],16,"Name","Encoder-Stage-1-Conv-1","Padding","same","WeightsInitializer","he")
     reluLayer("Name","Encoder-Stage-1-ReLU-1")
     convolution2dLayer([3 3],16,"Name","Encoder-Stage-1-Conv-2","Padding","same","WeightsInitializer","he")
