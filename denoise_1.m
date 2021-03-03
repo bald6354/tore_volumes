@@ -14,18 +14,22 @@ addpath(['edncnn' filesep 'code'])
 addpath(['edncnn' filesep 'camera'])
 
 
-%% Write out training/test data
-denoiseGenerateToreVolumes
+%% Randomly sample events to generate training data
+denoiseGenerateToreVolumes()
 
-
-%% Load data into memory
-buildTrainTestData
 
 
 %% Build and train denoise network
 
 
+
+%% Load data into memory
+buildTrainTestData()
+
+
+
 %% Calculate performance metrics
+
 
 
 %%
