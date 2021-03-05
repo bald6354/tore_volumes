@@ -8,6 +8,8 @@ This code was tested on an Ubuntu 18.04 system (i7-8700 CPU, 64GB RAM, and GeFor
 
 Information on the 2D to 3D human pose network can be found here: https://github.com/lrxjason/Attention3DHumanPose
 
+Information on the EDnCNN denoise network can be found here: https://github.com/bald6354/edncnn
+
 ## DVSNOISE20 Dataset (used for image reconstruction and denoising)
 To download the dataset use: [dvsnoise20](https://sites.google.com/a/udayton.edu/issl/software/dataset).
 
